@@ -1,0 +1,2192 @@
+openapi: 3.0.3
+info:
+  title: CoverKit API
+  description: |
+    # Welcome to the CoverKit API
+
+    CoverKit is the embedded insurance infrastructure for modern marketplaces.
+  version: 1.0.0
+  contact:
+    name: CoverKit Developer Support
+    email: dev-support@coverkit.io
+    url: https://developers.coverkit.io
+
+servers:
+  - url: https://api.coverkit.io/v1
+    description: Production server
+  - url: https://sandbox-api.coverkit.io/v1
+    description: Sandbox server
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Quotes
+    description: Generate insurance quotes
+  - name: Policies
+    description: Create and manage policies
+  - name: Claims
+    description: File and track claims
+  - name: Customers
+    description: Manage customers
+  - name: Webhooks
+    description: Manage webhooks
+  - name: Documents
+    description: Manage documents
+  - name: Payouts
+    description: Track payouts
+
+paths:
+  /quotes:
+    post:
+      tags:
+        - Quotes
+      summary: Create a quote
+      operationId: createQuote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuoteRequest"
+            examples:
+              deliveryProtection:
+                summary: Delivery Protection Quote
+                value:
+                  coverage_type: "delivery_protection"
+                  transaction_value: 24999
+                  currency: "USD"
+                  duration_type: "shipment"
+                  shipment_details:
+                    origin_zip: "78701"
+                    destination_zip: "90210"
+                    carrier: "FedEx"
+                    service_level: "overnight"
+                    weight_oz: 48
+                    tracking_number: "773459812563"
+                  metadata:
+                    order_id: "ord_8k2m9n4p5q6r"
+                    merchant_id: "mch_vintagetech_sf"
+                    item_description: "Leica M6 Camera Body - Black"
+              rentalProtection:
+                summary: Rental Protection Quote
+                value:
+                  coverage_type: "rental_protection"
+                  transaction_value: 189900
+                  currency: "USD"
+                  duration_type: "daily"
+                  duration_value: 5
+                  rental_details:
+                    item_category: "camera_equipment"
+                    item_description: "RED Komodo 6K Cinema Camera Package with lenses"
+                    deductible: 50000
+                    renter_age: 32
+                  metadata:
+                    rental_id: "rent_4j8k2m9p"
+                    platform: "cameralends_pro"
+              gigWorkerProtection:
+                summary: Gig Worker Protection Quote
+                value:
+                  coverage_type: "gig_worker_protection"
+                  transaction_value: 450000
+                  currency: "USD"
+                  duration_type: "per_job"
+                  service_details:
+                    service_category: "home_repair"
+                    job_description: "Kitchen renovation - cabinet installation and countertop replacement"
+                    location_zip: "02108"
+                    estimated_duration_hours: 16
+                  coverage_limits:
+                    general_liability: 2000000
+                    property_damage: 1000000
+                  metadata:
+                    job_id: "job_7n3k8m2p"
+                    contractor_id: "con_boston_reno_pros"
+      responses:
+        "200":
+          description: Quote created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+              examples:
+                deliveryQuote:
+                  summary: Delivery Protection Quote Response
+                  value:
+                    id: "quo_2v8x4k9m3n7p"
+                    object: "quote"
+                    coverage_type: "delivery_protection"
+                    premium_amount: 875
+                    currency: "USD"
+                    transaction_value: 24999
+                    coverage_amount: 24999
+                    deductible: 0
+                    duration_type: "shipment"
+                    valid_until: "2025-10-22T16:45:33Z"
+                    terms_url: "https://coverkit.io/terms/delivery-protection"
+                    coverage_summary: "Full replacement value coverage for package loss, damage, or theft during transit. Covers all carriers and includes tracking-based claims automation."
+                    created_at: "2025-10-21T16:45:33Z"
+                    metadata:
+                      order_id: "ord_8k2m9n4p5q6r"
+                      merchant_id: "mch_vintagetech_sf"
+                      item_description: "Leica M6 Camera Body - Black"
+                rentalQuote:
+                  summary: Rental Protection Quote Response
+                  value:
+                    id: "quo_9j4k7m2n8p3q"
+                    object: "quote"
+                    coverage_type: "rental_protection"
+                    premium_amount: 14242
+                    currency: "USD"
+                    transaction_value: 189900
+                    coverage_amount: 189900
+                    deductible: 50000
+                    duration_type: "daily"
+                    duration_value: 5
+                    valid_until: "2025-10-22T16:45:33Z"
+                    terms_url: "https://coverkit.io/terms/rental-protection"
+                    coverage_summary: "Comprehensive protection covering accidental damage, theft, and third-party liability during rental period. $500 deductible applies."
+                    rental_details:
+                      item_category: "camera_equipment"
+                      item_description: "RED Komodo 6K Cinema Camera Package with lenses"
+                    created_at: "2025-10-21T16:45:33Z"
+                    metadata:
+                      rental_id: "rent_4j8k2m9p"
+                      platform: "cameralends_pro"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    get:
+      tags:
+        - Quotes
+      summary: List quotes
+      operationId: listQuotes
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            maximum: 100
+        - name: starting_after
+          in: query
+          schema:
+            type: string
+        - name: coverage_type
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of quotes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: list
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Quote"
+                  has_more:
+                    type: boolean
+              example:
+                object: "list"
+                data:
+                  - id: "quo_2v8x4k9m3n7p"
+                    object: "quote"
+                    coverage_type: "delivery_protection"
+                    premium_amount: 875
+                    transaction_value: 24999
+                    created_at: "2025-10-21T16:45:33Z"
+                  - id: "quo_9j4k7m2n8p3q"
+                    object: "quote"
+                    coverage_type: "rental_protection"
+                    premium_amount: 14242
+                    transaction_value: 189900
+                    created_at: "2025-10-21T15:22:17Z"
+                  - id: "quo_5k8m3p9n2j7x"
+                    object: "quote"
+                    coverage_type: "gig_worker_protection"
+                    premium_amount: 3500
+                    transaction_value: 450000
+                    created_at: "2025-10-21T14:08:42Z"
+                has_more: true
+
+  /quotes/{quote_id}:
+    get:
+      tags:
+        - Quotes
+      summary: Retrieve a quote
+      operationId: getQuote
+      parameters:
+        - name: quote_id
+          in: path
+          required: true
+          description: The ID of the quote
+          schema:
+            type: string
+            example: "quo_2v8x4k9m3n7p"
+      responses:
+        "200":
+          description: Quote retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+              example:
+                id: "quo_2v8x4k9m3n7p"
+                object: "quote"
+                coverage_type: "delivery_protection"
+                premium_amount: 875
+                currency: "USD"
+                transaction_value: 24999
+                coverage_amount: 24999
+                deductible: 0
+                duration_type: "shipment"
+                valid_until: "2025-10-22T16:45:33Z"
+                terms_url: "https://coverkit.io/terms/delivery-protection"
+                coverage_summary: "Full replacement value coverage for package loss, damage, or theft during transit"
+                shipment_details:
+                  origin_zip: "78701"
+                  destination_zip: "90210"
+                  carrier: "FedEx"
+                  service_level: "overnight"
+                  tracking_number: "773459812563"
+                created_at: "2025-10-21T16:45:33Z"
+                metadata:
+                  order_id: "ord_8k2m9n4p5q6r"
+                  merchant_id: "mch_vintagetech_sf"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /policies:
+    post:
+      tags:
+        - Policies
+      summary: Create a policy
+      operationId: createPolicy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PolicyRequest"
+            examples:
+              fromQuote:
+                summary: Bind Policy from Quote
+                value:
+                  quote_id: "quo_2v8x4k9m3n7p"
+                  customer:
+                    id: "cus_james_martinez_2024"
+                  insured_party:
+                    type: "individual"
+                    first_name: "James"
+                    last_name: "Martinez"
+                    email: "james.martinez@techmail.com"
+                    phone: "+14157829403"
+                    address:
+                      line1: "8765 Wilshire Boulevard"
+                      line2: "Unit 304"
+                      city: "Beverly Hills"
+                      state: "CA"
+                      postal_code: "90210"
+                      country: "US"
+                  payment_method_id: "pm_1O2K3m4N5p6Q7r8S"
+                  start_time: "2025-10-22T08:00:00Z"
+                  metadata:
+                    order_id: "ord_8k2m9n4p5q6r"
+                    internal_ref: "ship_fedex_overnight_oct22"
+              directPolicy:
+                summary: Create Policy Without Quote
+                value:
+                  coverage_type: "delivery_protection"
+                  transaction_value: 12750
+                  currency: "USD"
+                  duration_type: "shipment"
+                  shipment_details:
+                    origin_zip: "10001"
+                    destination_zip: "60614"
+                    carrier: "USPS"
+                    service_level: "priority_mail"
+                    tracking_number: "9405511899223456789012"
+                  customer:
+                    email: "maria.garcia@emailprovider.com"
+                    first_name: "Maria"
+                    last_name: "Garcia"
+                  insured_party:
+                    type: "individual"
+                    first_name: "Maria"
+                    last_name: "Garcia"
+                    email: "maria.garcia@emailprovider.com"
+                    phone: "+13125554782"
+                    address:
+                      line1: "2847 North Lincoln Avenue"
+                      city: "Chicago"
+                      state: "IL"
+                      postal_code: "60614"
+                      country: "US"
+                  payment_method_id: "pm_9z8y7x6w5v4u3t2s"
+      responses:
+        "201":
+          description: Policy created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Policy"
+              example:
+                id: "pol_3m8k9n2p7j4x"
+                object: "policy"
+                policy_number: "CK-2025-10-247859"
+                status: "active"
+                coverage_type: "delivery_protection"
+                premium_amount: 875
+                currency: "USD"
+                transaction_value: 24999
+                coverage_amount: 24999
+                deductible: 0
+                start_time: "2025-10-22T08:00:00Z"
+                end_time: "2025-10-29T23:59:59Z"
+                quote_id: "quo_2v8x4k9m3n7p"
+                customer_id: "cus_james_martinez_2024"
+                insured_party:
+                  type: "individual"
+                  first_name: "James"
+                  last_name: "Martinez"
+                  email: "james.martinez@techmail.com"
+                  phone: "+14157829403"
+                certificate_url: "https://cdn.coverkit.io/certificates/pol_3m8k9n2p7j4x.pdf"
+                terms_url: "https://coverkit.io/terms/delivery-protection"
+                carrier:
+                  name: "Westfield Insurance"
+                  policy_number: "WF-CA-2025-872459"
+                  rating: "A+"
+                created_at: "2025-10-21T16:52:18Z"
+                updated_at: "2025-10-21T16:52:18Z"
+                metadata:
+                  order_id: "ord_8k2m9n4p5q6r"
+                  internal_ref: "ship_fedex_overnight_oct22"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "402":
+          description: Payment failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error:
+                  type: "payment_error"
+                  message: "The payment method was declined. Please provide a valid payment method."
+                  code: "card_declined"
+                  param: "payment_method_id"
+
+    get:
+      tags:
+        - Policies
+      summary: List policies
+      operationId: listPolicies
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: starting_after
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: customer_id
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of policies
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Policy"
+                  has_more:
+                    type: boolean
+              example:
+                object: "list"
+                data:
+                  - id: "pol_3m8k9n2p7j4x"
+                    policy_number: "CK-2025-10-247859"
+                    status: "active"
+                    coverage_type: "delivery_protection"
+                    premium_amount: 875
+                    customer_id: "cus_james_martinez_2024"
+                    created_at: "2025-10-21T16:52:18Z"
+                  - id: "pol_8j3k2m9n4p7x"
+                    policy_number: "CK-2025-10-247840"
+                    status: "expired"
+                    coverage_type: "rental_protection"
+                    premium_amount: 14242
+                    customer_id: "cus_alex_chen_prod"
+                    created_at: "2025-10-15T09:22:45Z"
+                has_more: true
+
+  /policies/{policy_id}:
+    get:
+      tags:
+        - Policies
+      summary: Retrieve a policy
+      operationId: getPolicy
+      parameters:
+        - name: policy_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "pol_3m8k9n2p7j4x"
+      responses:
+        "200":
+          description: Policy retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Policy"
+              example:
+                id: "pol_3m8k9n2p7j4x"
+                object: "policy"
+                policy_number: "CK-2025-10-247859"
+                status: "active"
+                coverage_type: "delivery_protection"
+                premium_amount: 875
+                currency: "USD"
+                transaction_value: 24999
+                coverage_amount: 24999
+                deductible: 0
+                start_time: "2025-10-22T08:00:00Z"
+                end_time: "2025-10-29T23:59:59Z"
+                quote_id: "quo_2v8x4k9m3n7p"
+                customer_id: "cus_james_martinez_2024"
+                insured_party:
+                  type: "individual"
+                  first_name: "James"
+                  last_name: "Martinez"
+                  email: "james.martinez@techmail.com"
+                  phone: "+14157829403"
+                certificate_url: "https://cdn.coverkit.io/certificates/pol_3m8k9n2p7j4x.pdf"
+                terms_url: "https://coverkit.io/terms/delivery-protection"
+                carrier:
+                  name: "Westfield Insurance"
+                  policy_number: "WF-CA-2025-872459"
+                created_at: "2025-10-21T16:52:18Z"
+                updated_at: "2025-10-21T16:52:18Z"
+                metadata:
+                  order_id: "ord_8k2m9n4p5q6r"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      tags:
+        - Policies
+      summary: Update a policy
+      operationId: updatePolicy
+      parameters:
+        - name: policy_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "pol_3m8k9n2p7j4x"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                end_time:
+                  type: string
+                  format: date-time
+                metadata:
+                  type: object
+            example:
+              end_time: "2025-11-05T23:59:59Z"
+              metadata:
+                extension_reason: "Delayed delivery - carrier issue"
+                updated_tracking: "9405511899223456789099"
+      responses:
+        "200":
+          description: Policy updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Policy"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+    delete:
+      tags:
+        - Policies
+      summary: Cancel a policy
+      operationId: cancelPolicy
+      parameters:
+        - name: policy_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "pol_3m8k9n2p7j4x"
+        - name: reason
+          in: query
+          schema:
+            type: string
+            example: "transaction_cancelled"
+      responses:
+        "200":
+          description: Policy cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  status:
+                    type: string
+                  cancelled_at:
+                    type: string
+                    format: date-time
+                  refund_amount:
+                    type: integer
+              example:
+                id: "pol_3m8k9n2p7j4x"
+                object: "policy"
+                status: "cancelled"
+                cancelled_at: "2025-10-21T17:08:42Z"
+                refund_amount: 875
+                refund_reason: "Full refund - cancelled within 24 hours of purchase"
+
+  /policies/{policy_id}/certificate:
+    get:
+      tags:
+        - Documents
+      summary: Download certificate
+      operationId: getPolicyCertificate
+      parameters:
+        - name: policy_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "pol_3m8k9n2p7j4x"
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [pdf, json]
+            default: pdf
+      responses:
+        "200":
+          description: Certificate
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            application/json:
+              schema:
+                type: object
+                properties:
+                  certificate_url:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+              example:
+                certificate_url: "https://cdn.coverkit.io/certificates/pol_3m8k9n2p7j4x.pdf"
+                expires_at: "2025-10-21T18:52:18Z"
+
+  /policies/{policy_id}/claims:
+    get:
+      tags:
+        - Policies
+      summary: List policy claims
+      operationId: listPolicyClaims
+      parameters:
+        - name: policy_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "pol_3m8k9n2p7j4x"
+      responses:
+        "200":
+          description: List of claims
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Claim"
+              example:
+                object: "list"
+                data:
+                  - id: "clm_9k4j8m2n7p3x"
+                    claim_number: "CK-CLM-2025-10-084721"
+                    status: "approved"
+                    claim_type: "damage"
+                    claim_amount: 24999
+                    filed_date: "2025-10-23T19:45:22Z"
+                has_more: false
+
+  /claims:
+    post:
+      tags:
+        - Claims
+      summary: File a claim
+      operationId: createClaim
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaimRequest"
+            examples:
+              deliveryClaim:
+                summary: Delivery Damage Claim
+                value:
+                  policy_id: "pol_3m8k9n2p7j4x"
+                  claim_type: "damage"
+                  incident_date: "2025-10-23T14:30:00Z"
+                  description: "Package arrived with significant external damage to the box. Upon opening, discovered the Leica M6 camera body has a large dent on the bottom plate and the film advance lever is bent. The camera appears non-functional. Delivery driver noted package condition at drop-off. Photos of damage attached."
+                  claim_amount: 24999
+                  claimant:
+                    type: "insured"
+                    email: "james.martinez@techmail.com"
+                    phone: "+14157829403"
+                  incident_details:
+                    damage_description: "Camera body dented, film advance lever bent, cosmetic damage to bottom plate"
+                    location: "Residential delivery - 8765 Wilshire Blvd Unit 304"
+                    witnesses: false
+                  metadata:
+                    order_id: "ord_8k2m9n4p5q6r"
+                    carrier_claim_ref: "FX987654321"
+              theftClaim:
+                summary: Rental Equipment Theft Claim
+                value:
+                  policy_id: "pol_8j3k2m9n4p7x"
+                  claim_type: "theft"
+                  incident_date: "2025-10-20T22:15:00Z"
+                  description: "RED Komodo camera package was stolen from locked vehicle during overnight parking at production location. Vehicle window was smashed and equipment bag containing camera body, three lenses, and accessories was taken. Police report filed immediately. Security footage from nearby business shows theft occurred around 10:15 PM."
+                  claim_amount: 189900
+                  claimant:
+                    type: "owner"
+                    email: "alexchen.filmmaker@gmail.com"
+                    phone: "+14155558492"
+                    name: "Alex Chen"
+                  incident_details:
+                    police_report_number: "SFPD-2025-087452"
+                    location: "1234 Mission Street, San Francisco, CA 94103"
+                    theft_description: "Smash and grab - vehicle window broken, equipment bag stolen"
+                  metadata:
+                    rental_id: "rent_4j8k2m9p"
+                    renter_contacted: "true"
+      responses:
+        "201":
+          description: Claim filed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
+              example:
+                id: "clm_9k4j8m2n7p3x"
+                object: "claim"
+                claim_number: "CK-CLM-2025-10-084721"
+                policy_id: "pol_3m8k9n2p7j4x"
+                status: "submitted"
+                claim_type: "damage"
+                claim_amount: 24999
+                approved_amount: null
+                incident_date: "2025-10-23T14:30:00Z"
+                filed_date: "2025-10-23T19:45:22Z"
+                description: "Package arrived with significant external damage..."
+                claimant:
+                  type: "insured"
+                  email: "james.martinez@techmail.com"
+                  phone: "+14157829403"
+                adjuster:
+                  name: "CoverKit Claims Team"
+                  email: "claims@coverkit.io"
+                estimated_resolution_date: "2025-10-24T19:45:22Z"
+                next_steps: "Our claims team will review your submission and supporting documents within 18 hours. Please upload photos of the damaged item and packaging using the document upload endpoint."
+                created_at: "2025-10-23T19:45:22Z"
+                updated_at: "2025-10-23T19:45:22Z"
+                metadata:
+                  order_id: "ord_8k2m9n4p5q6r"
+                  carrier_claim_ref: "FX987654321"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+    get:
+      tags:
+        - Claims
+      summary: List claims
+      operationId: listClaims
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: policy_id
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of claims
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Claim"
+                  has_more:
+                    type: boolean
+              example:
+                object: "list"
+                data:
+                  - id: "clm_9k4j8m2n7p3x"
+                    claim_number: "CK-CLM-2025-10-084721"
+                    policy_id: "pol_3m8k9n2p7j4x"
+                    status: "approved"
+                    claim_type: "damage"
+                    claim_amount: 24999
+                    approved_amount: 24999
+                    filed_date: "2025-10-23T19:45:22Z"
+                  - id: "clm_2p7j3k8m9n4x"
+                    claim_number: "CK-CLM-2025-10-084688"
+                    policy_id: "pol_7x3k9m2n8p4j"
+                    status: "under_review"
+                    claim_type: "theft"
+                    claim_amount: 189900
+                    filed_date: "2025-10-21T08:12:55Z"
+                has_more: true
+
+  /claims/{claim_id}:
+    get:
+      tags:
+        - Claims
+      summary: Retrieve a claim
+      operationId: getClaim
+      parameters:
+        - name: claim_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "clm_9k4j8m2n7p3x"
+      responses:
+        "200":
+          description: Claim retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
+              example:
+                id: "clm_9k4j8m2n7p3x"
+                object: "claim"
+                claim_number: "CK-CLM-2025-10-084721"
+                policy_id: "pol_3m8k9n2p7j4x"
+                status: "approved"
+                claim_type: "damage"
+                claim_amount: 24999
+                approved_amount: 24999
+                incident_date: "2025-10-23T14:30:00Z"
+                filed_date: "2025-10-23T19:45:22Z"
+                description: "Package arrived with significant external damage to the box..."
+                claimant:
+                  type: "insured"
+                  email: "james.martinez@techmail.com"
+                  phone: "+14157829403"
+                adjuster:
+                  name: "Michelle Thompson"
+                  email: "m.thompson@coverkit.io"
+                payout_date: "2025-10-24T16:30:00Z"
+                estimated_resolution_date: "2025-10-24T19:45:22Z"
+                next_steps: "Claim approved. Refund of $249.99 has been processed to your original payment method. Funds should appear in 3-5 business days."
+                created_at: "2025-10-23T19:45:22Z"
+                updated_at: "2025-10-24T16:30:00Z"
+                metadata:
+                  order_id: "ord_8k2m9n4p5q6r"
+                  carrier_claim_ref: "FX987654321"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      tags:
+        - Claims
+      summary: Update a claim
+      operationId: updateClaim
+      parameters:
+        - name: claim_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "clm_9k4j8m2n7p3x"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description:
+                  type: string
+            example:
+              description: "Additional information: Camera was purchased new from B&H Photo two weeks ago for $2,499. Original receipt attached. Item was fully insured for full replacement value during shipment."
+      responses:
+        "200":
+          description: Claim updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
+
+  /claims/{claim_id}/documents:
+    get:
+      tags:
+        - Documents
+      summary: List claim documents
+      operationId: listClaimDocuments
+      parameters:
+        - name: claim_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "clm_9k4j8m2n7p3x"
+      responses:
+        "200":
+          description: List of documents
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Document"
+              example:
+                object: "list"
+                data:
+                  - id: "doc_4m8k2n9p7j3x"
+                    filename: "damaged_camera_front.jpg"
+                    document_type: "photo"
+                    size: 2847293
+                    uploaded_at: "2025-10-23T19:52:08Z"
+                  - id: "doc_7j3k9m2n8p4x"
+                    filename: "damaged_packaging.jpg"
+                    document_type: "photo"
+                    size: 1923847
+                    uploaded_at: "2025-10-23T19:52:35Z"
+                  - id: "doc_2p8k3m9n7j4x"
+                    filename: "bh_photo_receipt_oct_2025.pdf"
+                    document_type: "receipt"
+                    size: 145829
+                    uploaded_at: "2025-10-23T20:01:17Z"
+
+    post:
+      tags:
+        - Documents
+      summary: Upload claim document
+      operationId: uploadClaimDocument
+      parameters:
+        - name: claim_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "clm_9k4j8m2n7p3x"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                document_type:
+                  type: string
+                  enum: [photo, receipt, police_report, repair_estimate, other]
+                description:
+                  type: string
+      responses:
+        "201":
+          description: Document uploaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+              example:
+                id: "doc_4m8k2n9p7j3x"
+                object: "document"
+                filename: "damaged_camera_front.jpg"
+                size: 2847293
+                mime_type: "image/jpeg"
+                document_type: "photo"
+                url: "https://cdn.coverkit.io/documents/doc_4m8k2n9p7j3x?expires=1729624928"
+                claim_id: "clm_9k4j8m2n7p3x"
+                uploaded_at: "2025-10-23T19:52:08Z"
+
+  /customers:
+    post:
+      tags:
+        - Customers
+      summary: Create a customer
+      operationId: createCustomer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerRequest"
+            example:
+              email: "emily.rodriguez@workmail.io"
+              first_name: "Emily"
+              last_name: "Rodriguez"
+              phone: "+16175559284"
+              date_of_birth: "1989-07-22"
+              address:
+                line1: "742 Commonwealth Avenue"
+                line2: "Apartment 5C"
+                city: "Boston"
+                state: "MA"
+                postal_code: "02215"
+                country: "US"
+              metadata:
+                marketplace_user_id: "usr_emily_r_2024"
+                account_tier: "premium"
+                signup_date: "2024-03-15"
+      responses:
+        "201":
+          description: Customer created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+              example:
+                id: "cus_emily_rodriguez_bos"
+                object: "customer"
+                email: "emily.rodriguez@workmail.io"
+                first_name: "Emily"
+                last_name: "Rodriguez"
+                phone: "+16175559284"
+                date_of_birth: "1989-07-22"
+                address:
+                  line1: "742 Commonwealth Avenue"
+                  line2: "Apartment 5C"
+                  city: "Boston"
+                  state: "MA"
+                  postal_code: "02215"
+                  country: "US"
+                policies_count: 0
+                claims_count: 0
+                total_premium_paid: 0
+                created_at: "2025-10-21T17:22:45Z"
+                updated_at: "2025-10-21T17:22:45Z"
+                metadata:
+                  marketplace_user_id: "usr_emily_r_2024"
+                  account_tier: "premium"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+    get:
+      tags:
+        - Customers
+      summary: List customers
+      operationId: listCustomers
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: email
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of customers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Customer"
+                  has_more:
+                    type: boolean
+              example:
+                object: "list"
+                data:
+                  - id: "cus_james_martinez_2024"
+                    email: "james.martinez@techmail.com"
+                    first_name: "James"
+                    last_name: "Martinez"
+                    policies_count: 8
+                    total_premium_paid: 6250
+                    created_at: "2024-08-12T10:45:00Z"
+                  - id: "cus_emily_rodriguez_bos"
+                    email: "emily.rodriguez@workmail.io"
+                    first_name: "Emily"
+                    last_name: "Rodriguez"
+                    policies_count: 3
+                    total_premium_paid: 2145
+                    created_at: "2025-03-15T14:22:45Z"
+                has_more: true
+
+  /customers/{customer_id}:
+    get:
+      tags:
+        - Customers
+      summary: Retrieve a customer
+      operationId: getCustomer
+      parameters:
+        - name: customer_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "cus_james_martinez_2024"
+      responses:
+        "200":
+          description: Customer retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+              example:
+                id: "cus_james_martinez_2024"
+                object: "customer"
+                email: "james.martinez@techmail.com"
+                first_name: "James"
+                last_name: "Martinez"
+                phone: "+14157829403"
+                date_of_birth: "1985-03-14"
+                address:
+                  line1: "8765 Wilshire Boulevard"
+                  line2: "Unit 304"
+                  city: "Beverly Hills"
+                  state: "CA"
+                  postal_code: "90210"
+                  country: "US"
+                policies_count: 8
+                claims_count: 2
+                total_premium_paid: 6250
+                created_at: "2024-08-12T10:45:00Z"
+                updated_at: "2025-10-21T16:52:18Z"
+                metadata:
+                  marketplace_user_id: "usr_jmartinez_vip"
+                  account_tier: "gold"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      tags:
+        - Customers
+      summary: Update a customer
+      operationId: updateCustomer
+      parameters:
+        - name: customer_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "cus_james_martinez_2024"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerRequest"
+            example:
+              phone: "+14157829404"
+              address:
+                line1: "9821 Sunset Boulevard"
+                line2: "Penthouse 2"
+                city: "West Hollywood"
+                state: "CA"
+                postal_code: "90069"
+                country: "US"
+      responses:
+        "200":
+          description: Customer updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+
+  /customers/{customer_id}/policies:
+    get:
+      tags:
+        - Customers
+      summary: List customer policies
+      operationId: listCustomerPolicies
+      parameters:
+        - name: customer_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "cus_james_martinez_2024"
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of policies
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Policy"
+              example:
+                object: "list"
+                data:
+                  - id: "pol_3m8k9n2p7j4x"
+                    policy_number: "CK-2025-10-247859"
+                    status: "active"
+                    coverage_type: "delivery_protection"
+                    premium_amount: 875
+                    start_time: "2025-10-22T08:00:00Z"
+                  - id: "pol_6k2m9n3p8j7x"
+                    policy_number: "CK-2025-09-234172"
+                    status: "expired"
+                    coverage_type: "delivery_protection"
+                    premium_amount: 625
+                    start_time: "2025-09-15T10:00:00Z"
+                has_more: true
+
+  /webhooks:
+    post:
+      tags:
+        - Webhooks
+      summary: Create webhook
+      operationId: createWebhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WebhookRequest"
+            example:
+              url: "https://api.yourmarketplace.com/webhooks/coverkit"
+              description: "Production webhook for policy and claim events"
+              enabled_events:
+                - "policy.created"
+                - "policy.expired"
+                - "claim.filed"
+                - "claim.approved"
+                - "claim.paid"
+              metadata:
+                environment: "production"
+                version: "v2"
+      responses:
+        "201":
+          description: Webhook created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Webhook"
+              example:
+                id: "whk_8j3k9m2n7p4x"
+                object: "webhook"
+                url: "https://api.yourmarketplace.com/webhooks/coverkit"
+                description: "Production webhook for policy and claim events"
+                enabled_events:
+                  - "policy.created"
+                  - "policy.expired"
+                  - "claim.filed"
+                  - "claim.approved"
+                  - "claim.paid"
+                status: "enabled"
+                secret: "whsec_K8m3n9P2j7X4k9M2n8P3j7K4m9N2p8J3x7"
+                created_at: "2025-10-21T17:45:33Z"
+                metadata:
+                  environment: "production"
+                  version: "v2"
+
+    get:
+      tags:
+        - Webhooks
+      summary: List webhooks
+      operationId: listWebhooks
+      responses:
+        "200":
+          description: List of webhooks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Webhook"
+              example:
+                object: "list"
+                data:
+                  - id: "whk_8j3k9m2n7p4x"
+                    url: "https://api.yourmarketplace.com/webhooks/coverkit"
+                    status: "enabled"
+                    created_at: "2025-10-21T17:45:33Z"
+                  - id: "whk_2p7j8k3m9n4x"
+                    url: "https://staging.yourmarketplace.com/webhooks/coverkit"
+                    status: "disabled"
+                    created_at: "2025-09-10T09:12:45Z"
+
+  /webhooks/{webhook_id}:
+    get:
+      tags:
+        - Webhooks
+      summary: Retrieve webhook
+      operationId: getWebhook
+      parameters:
+        - name: webhook_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "whk_8j3k9m2n7p4x"
+      responses:
+        "200":
+          description: Webhook retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Webhook"
+
+    patch:
+      tags:
+        - Webhooks
+      summary: Update webhook
+      operationId: updateWebhook
+      parameters:
+        - name: webhook_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "whk_8j3k9m2n7p4x"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url:
+                  type: string
+                enabled:
+                  type: boolean
+            example:
+              url: "https://api.yourmarketplace.com/v2/webhooks/coverkit"
+              enabled: true
+      responses:
+        "200":
+          description: Webhook updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Webhook"
+
+    delete:
+      tags:
+        - Webhooks
+      summary: Delete webhook
+      operationId: deleteWebhook
+      parameters:
+        - name: webhook_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "whk_8j3k9m2n7p4x"
+      responses:
+        "200":
+          description: Webhook deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  deleted:
+                    type: boolean
+              example:
+                id: "whk_8j3k9m2n7p4x"
+                object: "webhook"
+                deleted: true
+
+  /payouts:
+    get:
+      tags:
+        - Payouts
+      summary: List payouts
+      operationId: listPayouts
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of payouts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Payout"
+                  has_more:
+                    type: boolean
+              example:
+                object: "list"
+                data:
+                  - id: "po_2025_10_yourmarketplace"
+                    amount: 187425
+                    status: "pending"
+                    period_start: "2025-10-01T00:00:00Z"
+                    period_end: "2025-10-31T23:59:59Z"
+                    policies_count: 847
+                    arrival_date: "2025-11-05T00:00:00Z"
+                  - id: "po_2025_09_yourmarketplace"
+                    amount: 164280
+                    status: "paid"
+                    period_start: "2025-09-01T00:00:00Z"
+                    period_end: "2025-09-30T23:59:59Z"
+                    policies_count: 723
+                    paid_at: "2025-10-05T14:32:18Z"
+                has_more: true
+
+  /payouts/{payout_id}:
+    get:
+      tags:
+        - Payouts
+      summary: Retrieve payout
+      operationId: getPayout
+      parameters:
+        - name: payout_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "po_2025_10_yourmarketplace"
+      responses:
+        "200":
+          description: Payout retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payout"
+              example:
+                id: "po_2025_10_yourmarketplace"
+                object: "payout"
+                amount: 187425
+                currency: "USD"
+                status: "pending"
+                period_start: "2025-10-01T00:00:00Z"
+                period_end: "2025-10-31T23:59:59Z"
+                policies_count: 847
+                total_premiums: 749700
+                commission_rate: 0.25
+                arrival_date: "2025-11-05T00:00:00Z"
+                paid_at: null
+                failure_reason: null
+                created_at: "2025-11-01T00:15:00Z"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API key authentication
+
+  schemas:
+    QuoteRequest:
+      type: object
+      required:
+        - coverage_type
+        - transaction_value
+        - currency
+        - duration_type
+      properties:
+        coverage_type:
+          type: string
+          enum:
+            - delivery_protection
+            - rental_protection
+            - gig_worker_protection
+            - event_protection
+            - high_value_transaction
+        transaction_value:
+          type: integer
+          minimum: 100
+        currency:
+          type: string
+          default: USD
+          enum: [USD, CAD, GBP, EUR]
+        duration_type:
+          type: string
+          enum: [shipment, hourly, daily, weekly, monthly, per_job, per_event]
+        duration_value:
+          type: integer
+          minimum: 1
+          nullable: true
+        shipment_details:
+          type: object
+          nullable: true
+          properties:
+            origin_zip:
+              type: string
+            destination_zip:
+              type: string
+            carrier:
+              type: string
+              enum: [USPS, UPS, FedEx, DHL, other]
+            service_level:
+              type: string
+            weight_oz:
+              type: integer
+            tracking_number:
+              type: string
+        rental_details:
+          type: object
+          nullable: true
+          properties:
+            item_category:
+              type: string
+            item_description:
+              type: string
+            deductible:
+              type: integer
+            renter_age:
+              type: integer
+        service_details:
+          type: object
+          nullable: true
+          properties:
+            service_category:
+              type: string
+            job_description:
+              type: string
+            location_zip:
+              type: string
+        event_details:
+          type: object
+          nullable: true
+          properties:
+            event_type:
+              type: string
+            event_date:
+              type: string
+              format: date-time
+            attendee_count:
+              type: integer
+        metadata:
+          type: object
+          additionalProperties: true
+
+    Quote:
+      type: object
+      properties:
+        id:
+          type: string
+          example: quo_2v8x4k9m3n7p
+        object:
+          type: string
+          example: quote
+        coverage_type:
+          type: string
+        premium_amount:
+          type: integer
+          description: Premium in cents
+        currency:
+          type: string
+        transaction_value:
+          type: integer
+        coverage_amount:
+          type: integer
+        deductible:
+          type: integer
+        duration_type:
+          type: string
+        duration_value:
+          type: integer
+          nullable: true
+        valid_until:
+          type: string
+          format: date-time
+        terms_url:
+          type: string
+          format: uri
+        coverage_summary:
+          type: string
+        shipment_details:
+          type: object
+          nullable: true
+        rental_details:
+          type: object
+          nullable: true
+        service_details:
+          type: object
+          nullable: true
+        event_details:
+          type: object
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+          additionalProperties: true
+
+    PolicyRequest:
+      type: object
+      properties:
+        quote_id:
+          type: string
+          description: Use existing quote OR provide coverage details below
+        coverage_type:
+          type: string
+        transaction_value:
+          type: integer
+        currency:
+          type: string
+        duration_type:
+          type: string
+        duration_value:
+          type: integer
+          nullable: true
+        shipment_details:
+          type: object
+          nullable: true
+        rental_details:
+          type: object
+          nullable: true
+        service_details:
+          type: object
+          nullable: true
+        customer:
+          type: object
+          properties:
+            id:
+              type: string
+              description: Existing customer ID
+            email:
+              type: string
+            first_name:
+              type: string
+            last_name:
+              type: string
+        insured_party:
+          type: object
+          required:
+            - type
+            - first_name
+            - last_name
+            - email
+          properties:
+            type:
+              type: string
+              enum: [individual, business]
+            first_name:
+              type: string
+            last_name:
+              type: string
+            business_name:
+              type: string
+              nullable: true
+            email:
+              type: string
+              format: email
+            phone:
+              type: string
+            address:
+              $ref: "#/components/schemas/Address"
+        payment_method_id:
+          type: string
+        start_time:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+          additionalProperties: true
+
+    Policy:
+      type: object
+      properties:
+        id:
+          type: string
+          example: pol_3m8k9n2p7j4x
+        object:
+          type: string
+          example: policy
+        policy_number:
+          type: string
+          example: CK-2025-10-247859
+        status:
+          type: string
+          enum: [pending, active, expired, cancelled]
+        coverage_type:
+          type: string
+        premium_amount:
+          type: integer
+        currency:
+          type: string
+        transaction_value:
+          type: integer
+        coverage_amount:
+          type: integer
+        deductible:
+          type: integer
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        quote_id:
+          type: string
+          nullable: true
+        customer_id:
+          type: string
+          nullable: true
+        insured_party:
+          type: object
+          properties:
+            type:
+              type: string
+            first_name:
+              type: string
+            last_name:
+              type: string
+            business_name:
+              type: string
+              nullable: true
+            email:
+              type: string
+            phone:
+              type: string
+        certificate_url:
+          type: string
+          format: uri
+        terms_url:
+          type: string
+          format: uri
+        carrier:
+          type: object
+          nullable: true
+          properties:
+            name:
+              type: string
+            policy_number:
+              type: string
+            rating:
+              type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        cancelled_at:
+          type: string
+          format: date-time
+          nullable: true
+        metadata:
+          type: object
+          additionalProperties: true
+
+    ClaimRequest:
+      type: object
+      required:
+        - policy_id
+        - claim_type
+        - incident_date
+        - description
+      properties:
+        policy_id:
+          type: string
+        claim_type:
+          type: string
+          enum: [damage, theft, loss, liability, other]
+        incident_date:
+          type: string
+          format: date-time
+        description:
+          type: string
+          minLength: 50
+        claim_amount:
+          type: integer
+          description: Requested amount in cents
+        claimant:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: [insured, owner, third_party]
+            email:
+              type: string
+            phone:
+              type: string
+            name:
+              type: string
+        incident_details:
+          type: object
+          nullable: true
+          properties:
+            damage_description:
+              type: string
+            police_report_number:
+              type: string
+            location:
+              type: string
+        metadata:
+          type: object
+          additionalProperties: true
+
+    Claim:
+      type: object
+      properties:
+        id:
+          type: string
+          example: clm_9k4j8m2n7p3x
+        object:
+          type: string
+          example: claim
+        claim_number:
+          type: string
+          example: CK-CLM-2025-10-084721
+        policy_id:
+          type: string
+        status:
+          type: string
+          enum:
+            - submitted
+            - under_review
+            - additional_info_required
+            - approved
+            - denied
+            - paid
+            - closed
+        claim_type:
+          type: string
+        claim_amount:
+          type: integer
+        approved_amount:
+          type: integer
+          nullable: true
+        incident_date:
+          type: string
+          format: date-time
+        filed_date:
+          type: string
+          format: date-time
+        description:
+          type: string
+        claimant:
+          type: object
+          properties:
+            type:
+              type: string
+            email:
+              type: string
+            phone:
+              type: string
+            name:
+              type: string
+        adjuster:
+          type: object
+          nullable: true
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+        denial_reason:
+          type: string
+          nullable: true
+        payout_date:
+          type: string
+          format: date-time
+          nullable: true
+        estimated_resolution_date:
+          type: string
+          format: date-time
+          nullable: true
+        next_steps:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+          additionalProperties: true
+
+    Document:
+      type: object
+      properties:
+        id:
+          type: string
+          example: doc_4m8k2n9p7j3x
+        object:
+          type: string
+          example: document
+        filename:
+          type: string
+        size:
+          type: integer
+        mime_type:
+          type: string
+        document_type:
+          type: string
+        url:
+          type: string
+          format: uri
+        claim_id:
+          type: string
+          nullable: true
+        policy_id:
+          type: string
+          nullable: true
+        uploaded_at:
+          type: string
+          format: date-time
+
+    CustomerRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+        phone:
+          type: string
+        date_of_birth:
+          type: string
+          format: date
+        address:
+          $ref: "#/components/schemas/Address"
+        metadata:
+          type: object
+          additionalProperties: true
+
+    Customer:
+      type: object
+      properties:
+        id:
+          type: string
+          example: cus_james_martinez_2024
+        object:
+          type: string
+          example: customer
+        email:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        phone:
+          type: string
+        date_of_birth:
+          type: string
+          format: date
+          nullable: true
+        address:
+          $ref: "#/components/schemas/Address"
+        policies_count:
+          type: integer
+        claims_count:
+          type: integer
+        total_premium_paid:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+          additionalProperties: true
+
+    WebhookRequest:
+      type: object
+      required:
+        - url
+        - enabled_events
+      properties:
+        url:
+          type: string
+          format: uri
+        description:
+          type: string
+        enabled_events:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+          additionalProperties: true
+
+    Webhook:
+      type: object
+      properties:
+        id:
+          type: string
+          example: whk_8j3k9m2n7p4x
+        object:
+          type: string
+          example: webhook
+        url:
+          type: string
+        description:
+          type: string
+        enabled_events:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [enabled, disabled]
+        secret:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+          additionalProperties: true
+
+    Payout:
+      type: object
+      properties:
+        id:
+          type: string
+          example: po_2025_10_yourmarketplace
+        object:
+          type: string
+          example: payout
+        amount:
+          type: integer
+          description: Commission in cents
+        currency:
+          type: string
+        status:
+          type: string
+          enum: [pending, paid, failed]
+        period_start:
+          type: string
+          format: date-time
+        period_end:
+          type: string
+          format: date-time
+        policies_count:
+          type: integer
+        total_premiums:
+          type: integer
+        commission_rate:
+          type: number
+          format: float
+        arrival_date:
+          type: string
+          format: date-time
+          nullable: true
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+        failure_reason:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    Address:
+      type: object
+      properties:
+        line1:
+          type: string
+          example: "8765 Wilshire Boulevard"
+        line2:
+          type: string
+          nullable: true
+          example: "Unit 304"
+        city:
+          type: string
+          example: "Beverly Hills"
+        state:
+          type: string
+          example: "CA"
+        postal_code:
+          type: string
+          example: "90210"
+        country:
+          type: string
+          minLength: 2
+          maxLength: 2
+          example: "US"
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            type:
+              type: string
+              example: "invalid_request_error"
+            message:
+              type: string
+              example: "The coverage_type field is required"
+            code:
+              type: string
+              example: "parameter_missing"
+            param:
+              type: string
+              nullable: true
+              example: "coverage_type"
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error:
+              type: "invalid_request_error"
+              message: "The transaction_value must be at least $1.00 (100 cents)"
+              code: "invalid_parameter_value"
+              param: "transaction_value"
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error:
+              type: "authentication_error"
+              message: "Invalid API key provided. Please check your API key and try again."
+              code: "invalid_api_key"
+              param: null
+
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error:
+              type: "invalid_request_error"
+              message: "No such policy: pol_invalid123xyz. Please check the policy ID and try again."
+              code: "resource_not_found"
+              param: "policy_id"
+
+    RateLimitExceeded:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error:
+              type: "rate_limit_error"
+              message: "Too many requests. You have exceeded the rate limit of 1000 requests per minute. Please retry after 60 seconds."
+              code: "rate_limit_exceeded"
+              param: null
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error:
+              type: "api_error"
+              message: "An unexpected error occurred on our end. Our team has been automatically notified and is investigating. Please try again in a few moments."
+              code: "internal_error"
+              param: null
